@@ -24,6 +24,7 @@ export const workflowSettings: WorkflowSettings = {
 export default async function Workflow(event: onPlanCancellationRequestEvent) {
   const { plans } = event.context.billing
   const subscription = plans?.[0]
+  console.log("Logging for debugging", plans)
 
   if (subscription?.subscribed_on) {
     const start = new Date(subscription.subscribed_on)
