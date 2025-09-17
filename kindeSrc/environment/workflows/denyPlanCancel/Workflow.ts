@@ -3,6 +3,7 @@ import {
   WorkflowSettings,
   WorkflowTrigger,
   denyPlanCancellation,
+  getEnvironmentVariable,
 } from "@kinde/infrastructure"
 
 // The setting for this workflow
@@ -16,7 +17,6 @@ export const workflowSettings: WorkflowSettings = {
   bindings: {
     "kinde.plan": {},
     "kinde.env": {},
-    "kinde.fetch": {},
     url: {},
   },
 }
@@ -25,26 +25,29 @@ export const workflowSettings: WorkflowSettings = {
 
 // The workflow code to be executed when the event is triggered
 export default async function Workflow(event: onPlanCancellationRequest) {
-  const { currentPlanCode, agreementId } = event.context.billing
-  // logs
-  console.log("Current plan code", currentPlanCode, "Aggrement ID", agreementId)
-  console.log("The event context", event.context)
-
-  // get the data from here
-
-  // const subscription = plans?.[0]
-  // console.log("Logging for debugging", plans)
-
-  // if (subscription?.subscribed_on) {
-  //   const start = new Date(subscription.subscribed_on)
-  //   const minEnd = new Date(start)
-  //   minEnd.setMonth(minEnd.getMonth() + 3)
-
-  //   if (new Date() < minEnd) {
-  //   }
-  // }
-
-  denyPlanCancellation(
-    `You’re on a 3-month commitment. You can cancel after 3 months.`
+  const { currentPlanCode } = event.context.billing
+  // Configurable list of enterprise-like SKUs (comma-separated), default to "enterprise"
+  const ENTERPRISE_CODES = (
+    getEnvironmentVariable("ENTERPRISE_PLAN_CODES").value || "enterprise"
   )
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+
+  const isEnterprise =
+    !!currentPlanCode &&
+    ENTERPRISE_CODES.includes(String(currentPlanCode).toLowerCase())
+
+  // logs
+  console.log(
+    "enterprise codes",
+    ENTERPRISE_CODES,
+    "isEnterprise",
+    isEnterprise
+  )
+
+  if (isEnterprise) {
+    denyPlanCancellation(
+      "Your subscription is managed by our team. To make changes, please contact support."
+    )
+  }
 }
